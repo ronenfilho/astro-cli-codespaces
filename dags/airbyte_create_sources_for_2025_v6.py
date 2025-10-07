@@ -5,6 +5,61 @@ from airflow.models.dag import DAG
 from airflow.decorators import task
 
 # =============================================================================
+# FUNÇÃO AUXILIAR: Obter Token OAuth
+# =============================================================================
+def get_airbyte_oauth_token() -> tuple[str, str]:
+    """
+    Obtém token OAuth do Airbyte usando Client ID e Secret
+    Retorna (access_token, base_url)
+    """
+    import requests
+    from airflow.utils.log.logging_mixin import LoggingMixin
+    from airflow.hooks.base import BaseHook
+    
+    log = LoggingMixin().log
+    
+    try:
+        conn = BaseHook.get_connection('airbyte_api')
+        client_secret = conn.password
+        base_url = conn.host
+        client_id = conn.extra_dejson.get('client_id') if conn.extra_dejson else None
+
+        if not client_secret:
+            raise ValueError("Client Secret não configurado na conexão 'airbyte_api'")
+        if not client_id:
+            raise ValueError("Client ID não configurado no extra da conexão 'airbyte_api'")
+        
+        # Obter token OAuth
+        oauth_endpoint = f"{base_url}/v1/applications/token"
+        oauth_payload = {
+            "client_id": client_id,
+            "client_secret": client_secret
+        }
+        
+        oauth_headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        }
+        
+        response = requests.post(oauth_endpoint, headers=oauth_headers, json=oauth_payload, timeout=30)
+        
+        if response.status_code != 200:
+            raise Exception(f"OAuth falhou: {response.status_code} - {response.text}")
+        
+        oauth_data = response.json()
+        access_token = oauth_data.get('access_token')
+        
+        if not access_token:
+            raise Exception("Access token não retornado pela API OAuth")
+            
+        log.info(f"✅ Token OAuth obtido com sucesso: {access_token[:10]}...")
+        return access_token, base_url
+        
+    except Exception as e:
+        log.error(f"Falha ao obter token OAuth: {e}")
+        raise
+
+# =============================================================================
 # TAREFA 1: Criar a Fonte no Airbyte
 # =============================================================================
 @task
@@ -22,20 +77,9 @@ def create_airbyte_source(month: str, year: str = "2024") -> str:
 
     log.info(f"--- CRIANDO FONTE AIRBYTE PARA {year}-{month} ---")
 
-    try:
-        conn = BaseHook.get_connection('airbyte_api')
-        api_key = conn.password
-        base_url = conn.host
-
-        if not api_key:
-            raise ValueError("O campo 'Password' na conexão 'airbyte_api' está vazio!")
-        
-        log.info(f"Chave de API recuperada. Início: {api_key[:8]}...")
-
-    except Exception as e:
-        log.error(f"Falha ao obter a conexão 'airbyte_api'. Erro: {e}")
-        raise
-
+    # Obter token OAuth
+    access_token, base_url = get_airbyte_oauth_token()
+    
     workspace_id = Variable.get("airbyte_workspace_id")
     definition_id = Variable.get("airbyte_source_definition_id")
     
@@ -55,7 +99,7 @@ def create_airbyte_source(month: str, year: str = "2024") -> str:
     }
 
     headers = {
-        "Authorization": f"Bearer {api_key}",
+        "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json",
         "Accept": "application/json"
     }
@@ -101,20 +145,9 @@ def create_airbyte_connection(source_id: str) -> str:
 
     log.info(f"--- CRIANDO CONEXÃO PARA SOURCE_ID: {source_id} ---")
 
-    try:
-        conn = BaseHook.get_connection('airbyte_api')
-        api_key = conn.password
-        base_url = conn.host
-
-        if not api_key:
-            raise ValueError("O campo 'Password' na conexão 'airbyte_api' está vazio!")
-        
-        log.info(f"Chave de API recuperada. Início: {api_key[:8]}...")
-
-    except Exception as e:
-        log.error(f"Falha ao obter a conexão 'airbyte_api'. Erro: {e}")
-        raise
-
+    # Obter token OAuth
+    access_token, base_url = get_airbyte_oauth_token()
+    
     destination_id = Variable.get("airbyte_destination_id_snowflake")
     
     # Validar se os IDs estão no formato UUID correto
@@ -129,7 +162,7 @@ def create_airbyte_connection(source_id: str) -> str:
 
     # Primeiro, vamos verificar se a fonte existe
     headers = {
-        "Authorization": f"Bearer {api_key}",
+        "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json",
         "Accept": "application/json"
     }
@@ -176,6 +209,15 @@ def create_airbyte_connection(source_id: str) -> str:
         log.error(f"Falha ao criar conexão. Status: {response.status_code}")
         log.error(f"Resposta da API: {response.text}")
         
+        # Verificar se é conflito de stream (conexão já existe)
+        if response.status_code == 400:
+            response_data = response.json()
+            if (response_data.get('type') == 'error:connection-conflicting-destination-stream' or 
+                'conflicting stream' in response_data.get('detail', '').lower()):
+                log.info("🎯 CONEXÃO JÁ EXISTE! Conflito de stream detectado - considerando como sucesso")
+                # Retornar ID fictício para indicar sucesso (conexão já existe)
+                return f"existing-connection-{source_id[-8:]}"
+        
         # Tentar payload alternativo se o primeiro falhar
         if response.status_code == 403:
             log.info("Tentando payload alternativo...")
@@ -204,15 +246,15 @@ def create_airbyte_connection(source_id: str) -> str:
 # DEFINIÇÃO DA DAG
 # =============================================================================
 with DAG(
-    dag_id="airbyte_create_sources_for_2024_v5",
+    dag_id="airbyte_create_sources_for_2025_v6",
     start_date=pendulum.datetime(2025, 9, 25, tz="America/Sao_Paulo"),
     schedule=None,
     catchup=False,
     tags=["airbyte", "automation", "Inteligencia Energetica"],
     doc_md="""
-    ### DAG para Criação de Fontes e Conexões no Airbyte - v5
+    ### DAG para Criação de Fontes e Conexões no Airbyte - v6
     
-    Esta DAG automatiza a criação de fontes e conexões no Airbyte para todos os meses de 2024.
+    Esta DAG automatiza a criação de fontes e conexões no Airbyte para os últimos 3 meses de 2024 (agosto, setembro, outubro).
     
     **Fluxo de Trabalho:**
     1. **TAREFA 1**: Cria uma fonte no Airbyte para cada mês
@@ -232,8 +274,8 @@ with DAG(
     """
 ) as dag:
     
-    # Gera a lista de meses ('01', '02', ..., '12')
-    months = [f"{m:02d}" for m in range(1, 13)]
+    # Gera a lista dos últimos 3 meses (outubro, setembro, agosto)
+    months = ["10", "09", "08"]
     
     # Etapa 1: Mapeamento dinâmico para criar as fontes
     source_ids = create_airbyte_source.expand(month=months)

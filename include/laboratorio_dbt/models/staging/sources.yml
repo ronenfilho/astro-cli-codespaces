@@ -1,0 +1,96 @@
+version: 2
+
+sources:
+  - name: staging
+    description: "Dados brutos carregados pelo Airbyte no schema STAGING"
+    schema: staging
+    tables:
+      - name: disponibilidade_usina_2025_07
+        description: "Dados de disponibilidade de usinas para julho de 2025"
+        columns:
+          - name: id_subsistema
+            description: "Identificador do subsistema"
+          - name: nom_subsistema
+            description: "Nome do subsistema"
+          - name: id_estado
+            description: "Identificador do estado"
+          - name: nom_estado
+            description: "Nome do estado"
+          - name: id_ons
+            description: "Identificador ONS"
+          - name: ceg
+            description: "Código da usina (CEG)"
+          - name: nom_usina
+            description: "Nome da usina"
+          - name: id_tipousina
+            description: "Identificador do tipo de usina"
+          - name: nom_tipocombustivel
+            description: "Nome do tipo de combustível"
+          - name: din_instante
+            description: "Data e hora do registro"
+          - name: val_potenciainstalada
+            description: "Valor da potência instalada (MW)"
+          - name: val_dispoperacional
+            description: "Valor da disponibilidade operacional (MW)"
+          - name: val_dispsincronizada
+            description: "Valor da disponibilidade sincronizada (MW)"
+
+      - name: disponibilidade_usina_2025_08
+        description: "Dados de disponibilidade de usinas para agosto de 2025"
+        columns:
+          - name: id_subsistema
+            description: "Identificador do subsistema"
+          - name: nom_subsistema
+            description: "Nome do subsistema"
+          - name: id_estado
+            description: "Identificador do estado"
+          - name: nom_estado
+            description: "Nome do estado"
+          - name: id_ons
+            description: "Identificador ONS"
+          - name: ceg
+            description: "Código da usina (CEG)"
+          - name: nom_usina
+            description: "Nome da usina"
+          - name: id_tipousina
+            description: "Identificador do tipo de usina"
+          - name: nom_tipocombustivel
+            description: "Nome do tipo de combustível"
+          - name: din_instante
+            description: "Data e hora do registro"
+          - name: val_potenciainstalada
+            description: "Valor da potência instalada (MW)"
+          - name: val_dispoperacional
+            description: "Valor da disponibilidade operacional (MW)"
+          - name: val_dispsincronizada
+            description: "Valor da disponibilidade sincronizada (MW)"
+
+      - name: disponibilidade_usina_2025_09
+        description: "Dados de disponibilidade de usinas para setembro de 2025"
+        columns:
+          - name: id_subsistema
+            description: "Identificador do subsistema"
+          - name: nom_subsistema
+            description: "Nome do subsistema"
+          - name: id_estado
+            description: "Identificador do estado"
+          - name: nom_estado
+            description: "Nome do estado"
+          - name: id_ons
+            description: "Identificador ONS"
+          - name: ceg
+            description: "Código da usina (CEG)"
+          - name: nom_usina
+            description: "Nome da usina"
+          - name: id_tipousina
+            description: "Identificador do tipo de usina"
+          - name: nom_tipocombustivel
+            description: "Nome do tipo de combustível"
+          - name: din_instante
+            description: "Data e hora do registro"
+          - name: val_potenciainstalada
+            description: "Valor da potência instalada (MW)"
+          - name: val_dispoperacional
+            description: "Valor da disponibilidade operacional (MW)"
+          - name: val_dispsincronizada
+            description: "Valor da disponibilidade sincronizada (MW)"
