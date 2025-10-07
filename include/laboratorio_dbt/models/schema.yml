@@ -1,0 +1,68 @@
+version: 2
+
+sources:
+  - name: staging
+    tables:
+      - name: disponibilidade_usina_2025_07
+      - name: disponibilidade_usina_2025_08
+      - name: disponibilidade_usina_2025_09
+
+models:
+  # Testes para o modelo de staging (já existentes)
+  - name: stg_usina_disp
+    columns:
+      - name: instante
+        tests: [not_null]
+      - name: id_subsistema
+        tests: [not_null]
+
+  # Testes para a dimensão de usina
+  - name: dim_usina
+    columns:
+      - name: id_dim_usina
+        description: "Chave primária da dimensão de usina."
+        tests:
+          - unique
+          - not_null
+
+  # Testes para a dimensão de localidade
+  - name: dim_localidade
+    columns:
+      - name: id_dim_localidade
+        description: "Chave primária da dimensão de localidade."
+        tests:
+          - unique
+          - not_null
+
+  # Testes para a dimensão de tempo
+  - name: dim_tempo
+    columns:
+      - name: id_dim_tempo
+        description: "Chave primária da dimensão de tempo."
+        tests:
+          - unique
+          - not_null
+
+  # Testes para a tabela de fatos
+  - name: fact_disponibilidade
+    columns:
+      - name: id_dim_usina
+        description: "Chave estrangeira para a dim_usina."
+        tests:
+          - relationships:
+              to: ref('dim_usina')
+              field: id_dim_usina
+
+      - name: id_dim_localidade
+        description: "Chave estrangeira para a dim_localidade."
+        tests:
+          - relationships:
+              to: ref('dim_localidade')
+              field: id_dim_localidade
+
+      - name: id_dim_tempo
+        description: "Chave estrangeira para a dim_tempo."
+        tests:
+          - relationships:
+              to: ref('dim_tempo')
+              field: id_dim_tempo
