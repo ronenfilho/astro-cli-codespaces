@@ -13,7 +13,7 @@ profile = ProfileConfig(
         conn_id="snowflake_dev", # usa a Connection criada manualmente no Airflow
         profile_args={
             "database": "LAB_PIPELINE",
-            "schema": "CORE",
+            "schema": "STAGING",
             "warehouse": "LAB_WH_DBT",
             "role": "DBT_DEV",
         },

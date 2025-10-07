@@ -30,7 +30,7 @@ SNOWFLAKE_CONN_ID = "snowflake_dev"
 )
 def load_disponibilidade_usina_dag():
     table_name = 'DISPONIBILIDADE_USINA_2025_08_AIRFLOW'
-    schema = 'STAGING'
+    schema = 'RAW'  # Mudança para schema com permissões
     stage_name = 'TEMP_STAGE_USINA'
     local_csv_path = f'/tmp/{table_name}.csv'
 
@@ -84,8 +84,14 @@ def load_disponibilidade_usina_dag():
         conn.close()
         print(f"Dados carregados na tabela {schema}.{table_name} com sucesso via COPY!")
 
+    # Definir as dependências corretamente
     csv_path = download_csv()
+    
+    # Tarefas que dependem do download
+    table_created = create_table(csv_path)
     file_name = create_stage_and_upload(csv_path)
-    create_table(csv_path) >> copy_into_table(file_name)
+    
+    # Copy depende da tabela estar criada e do arquivo estar no stage
+    table_created >> copy_into_table(file_name)
     
 dag = load_disponibilidade_usina_dag()
